@@ -1,0 +1,13 @@
+{
+  "firebase": "wb-mobile-demo",
+  "public": ".",
+  "ignore": [
+    "firebase.json",
+    "**/.*",
+    "**/node_modules/**"
+  ],
+"rewrites": [ {
+  "source": "/qr**",
+  "destination": "/qr/index.svg"
+} ]
+}

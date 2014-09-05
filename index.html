@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<head>
+  <title>Whiteboard</title>
+  <style type="text/css">
+    body {
+      margin: 0px;
+      padding: 0px;
+      font-family: arial;
+      font-size :11px;
+
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+
+    #top, #bottom {
+      border:1px solid gray;
+    }
+
+    #top {
+      position: absolute;
+      top: 0px;
+      left: 0px;
+      z-index: 2;
+    }
+
+    #toolbar {
+      position: absolute;
+      top: 0px;
+      width: 800px;
+      z-index: 4;
+      margin: 1px;
+      padding: 3px;
+      background-color: #e2e2e2;
+      box-sizing: border-box;
+    }
+
+    div.cursor {
+      position: absolute;
+      border:1px solid red;
+      border-width: 1px 0 0 1px;
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    input[type=radio] {
+      display: none;
+    }
+    #toolbar img {
+      height: 32px;
+      width: 32px;
+    }
+  </style>
+<meta content='width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;' name='viewport' />
+<meta name="viewport" content="width=device-width" />
+
+</head>
+
+<body style="width: 320px;">
+  <canvas id="bottom" width="800" height="480"></canvas>
+  <canvas id="top" width="800" height="480"></canvas>
+
+  <div id="toolbar">
+    <span id="clear" hotkey="67"><img src="images/clear.png"></span>
+    <span id="undo" hotkey="90"><img src="images/undo.png"></span>
+
+    <label><input type="radio" name="brush" color="#000000" thickness="1" hotkey="66" checked="checked"/><img src="images/black.png"></label>
+    <label><input type="radio" name="brush" color="#008000" thickness="1" hotkey="71"/><img src="images/green.png"></label>
+    <label><input type="radio" name="brush" color="#FF0000" thickness="1" hotkey="82"/><img src="images/red.png"></label>
+    <label><input type="radio" name="brush" color="#0000FF" thickness="1" hotkey="76"/><img src="images/blue.png"></label>
+    <label><input type="radio" name="brush" color="#FFFFFF" thickness="20" hotkey="69"/><img src="images/erase.png"></label>
+  </div>
+
+  <script type="text/javascript" src="https://cdn.firebase.com/js/client/1.0.17/firebase.js"></script>
+  <script type="text/javascript" src="underscore-min.js"></script>
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+  <script>
+
+  $(document).ready(function() {
+
+    var width = 320;
+    var height = 480;
+
+    var rootRef = new Firebase('https://wb-mobile-demo.firebaseio.com/');
+
+    //Choose a random whiteboard
+    var boardId = window.location.hash.replace(/#/g, '') || rootRef.push().name();
+    var wurl = window.location.toString().replace(/#.*/, '') + '#' + boardId;
+    window.location = wurl;
+    $("#toolbar").append("<a style='float: right; margin-top: 4px; margin-right: 10px;' href='/qr/index.svg#" + wurl + "'><img src='images/qrcode.png'></a>");
+
+    //if the hash changes again, reload the page
+    setTimeout(function() {
+      $(window).on('hashchange', function() {
+        window.location.reload();
+      });
+    }, 0);
+
+    var possibleNames = ["Joe", "Jenny", "Bob", "Frank", "Sally", "Anne",
+      "James", "Gretchen", "Tammy", "Hodor", "Brian", "Jennifer", "Jill", "Jen"];
+    var randNameInd = Math.floor(Math.random()*possibleNames.length);
+    var username = possibleNames[randNameInd];
+
+    var boardRef = rootRef.child(boardId);
+    var layersRef = boardRef.child('layers');
+    var usersRef = boardRef.child('users');
+    var userRef = usersRef.child(username);
+
+    var $body = $("body");
+
+    var $bottomCanvas = $('#bottom');
+    var $topCanvas = $('#top');
+
+    var bottomCanvas = $bottomCanvas.get(0);
+    var topCanvas = $topCanvas.get(0);
+
+    var bottomCtx = bottomCanvas.getContext('2d');
+    var topCtx = topCanvas.getContext('2d');
+
+    var newLayer;
+
+    // View:
+
+    var clear = function(ctx) {
+      ctx.clearRect(0, 0, width, height);
+    };
+
+    var drawLayer = function(ctx, layer) {
+      ctx.beginPath();
+      ctx.lineWidth = layer.thickness;
+      ctx.strokeStyle = layer.color;
+      ctx.moveTo(layer.points[0].x, layer.points[0].y);
+      _.each(_.rest(layer.points, 1), function(point) {
+        ctx.lineTo(point.x, point.y);
+      });
+      ctx.stroke();
+    };
+
+    var showNewLayer = function() {
+      clear(topCtx);
+      drawLayer(topCtx, newLayer);
+    };
+
+    var drawChild = function(snapshot) {
+      drawLayer(bottomCtx, snapshot.val());
+    };
+
+    var redraw = function() {
+      clear(bottomCtx);
+      layersRef.once('value', function(snapshot) {
+        snapshot.forEach(drawChild);
+      });
+    };
+
+    layersRef.on('child_added', drawChild);
+    layersRef.on('child_removed', redraw);
+
+    usersRef.on('child_changed', function(snapshot) {
+      var name = snapshot.name();
+      var user = snapshot.val();
+
+      id = "cursor_"+name;
+      var $cursor = $("#"+id);
+      if(!$cursor.length) {
+        $cursor = $('<div>').attr('id', id).addClass('cursor').text(name)
+            .appendTo('body');
+      }
+
+      $cursor.css('left', user.cursorPoint.x).css('top', user.cursorPoint.y);
+    });
+
+    usersRef.on('child_removed', function(snapshot) {
+      $("#cursor_"+snapshot.name()).remove();
+    });
+
+    // User input:
+
+    userRef.removeOnDisconnect();
+
+    $topCanvas.on('mousedown', function(e) {
+      newLayer = {
+        points: [{x: e.pageX, y: e.pageY}],
+        color: $("input[name=brush]:checked").attr('color'),
+        thickness: $("input[name=brush]:checked").attr('thickness')
+      };
+
+      var now = function() { return new Date().getTime() };
+      var last = 0;
+      $body.on('mousemove.brush', function(e) {
+        if(last < now() - 20) {
+          newLayer.points.push({x: e.pageX, y: e.pageY});
+          showNewLayer();
+          last = now();
+        }
+      });
+
+      $body.one('mouseup', function(e) {
+        $body.off('mousemove.brush');
+        layersRef.push(newLayer);
+        clear(topCtx);
+      });
+    });
+
+    $body.on(
+      'mousemove',
+      _.throttle(function(e) {
+        userRef.child('cursorPoint').set({x: e.pageX, y: e.pageY});
+      }, 30)
+    );
+
+
+function touchHandler(event)
+{
+    var touches = event.changedTouches,
+        first = touches[0],
+        type = "";
+         switch(event.type)
+    {
+        case "touchstart": type = "mousedown"; break;
+        case "touchmove":  type="mousemove"; break;        
+        case "touchend":   type="mouseup"; break;
+        default: return;
+    }
+
+             //initMouseEvent(type, canBubble, cancelable, view, clickCount, 
+    //           screenX, screenY, clientX, clientY, ctrlKey, 
+    //           altKey, shiftKey, metaKey, button, relatedTarget);
+
+    var simulatedEvent = document.createEvent("MouseEvent");
+    simulatedEvent.initMouseEvent(type, true, true, window, 1, 
+                              first.screenX, first.screenY, 
+                              first.clientX, first.clientY, false, 
+                              false, false, false, 0/*left*/, null);
+first.target.dispatchEvent(simulatedEvent);
+    //event.preventDefault();
+}
+
+function init() 
+{
+    document.addEventListener("touchstart", touchHandler, true);
+    document.addEventListener("touchmove", touchHandler, true);
+    document.addEventListener("touchend", touchHandler, true);
+    document.addEventListener("touchcancel", touchHandler, true);    
+}
+
+init();
+
+    $("#clear").on('click', function() {
+      layersRef.remove();
+    });
+
+    $("#undo").on('click', function() {
+      var query = layersRef.limit(1);
+      query.once('child_added', function(snapshot) {
+        layersRef.child(snapshot.name()).remove();
+      });
+    });
+
+    $(document).keydown(function(e) {
+      console.log(e.which)
+      $("*[hotkey="+e.which+"]").click();
+    });
+
+    // prevent text cursor from showing up as you draw
+    topCanvas.onselectstart = function () { return false; };
+  });
+
+  </script>
+</body>
+

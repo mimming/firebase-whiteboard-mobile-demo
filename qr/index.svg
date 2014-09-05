@@ -1,0 +1,30 @@
+<?xml version="1.0" standalone="yes"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 100 100">
+  <g id="qrcode"/>
+  <foreignObject x="0" y="0" width="100" height="100">
+    <body xmlns="http://www.w3.org/1999/xhtml" style="padding:0; margin:0">
+      <script type="application/ecmascript" src="qrcode.js"></script>
+      <script type="application/ecmascript">
+var elem = document.getElementById("qrcode");
+var qrcode = new QRCode(elem, {
+    width : 100,
+    height : 100
+});
+var oldHash;
+function makeCode() {
+  window.setTimeout(makeCode, 100);
+  if(location.hash.length > 1) {
+    if(oldHash != location.hash.substr(1)) {
+      oldHash = location.hash.substr(1);
+	  qrcode.makeCode(oldHash);
+    }
+  } else {
+    qrcode.makeCode("http://mimming.com");
+  }
+}
+
+makeCode();
+</script>
+    </body>
+  </foreignObject>
+</svg>
