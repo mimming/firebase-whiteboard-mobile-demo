@@ -1,10 +1,12 @@
 # Whiteboard demo
 
-It uses Firebase
-It works on mobile devices
-Go try it out: https://wb-mobile-demo.firebaseapp.com
+It uses [Firebase](https://www.firebase.com)
+It works on mobile devices!
 
+[![A preview of this app](preview.gif)](https://yaay.firebaseapp.com)
 
-## What it looks like
+Go try it out: [https://yaay.firebaseapp.com](https://yaay.firebaseapp.com)
 
-![screenshot of this app](readme/whiteboard-demo.png)
+## License
+
+MIT
