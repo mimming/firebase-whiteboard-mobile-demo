@@ -3,9 +3,9 @@
   <title>Whiteboard</title>
   <style type="text/css">
     body {
-      margin: 0px;
-      padding: 0px;
-      font-family: arial;
+      margin: 0;
+      padding: 0;
+      font-family: arial,sans-serif;
       font-size :11px;
 
       -webkit-touch-callout: none;
@@ -14,6 +14,7 @@
       -moz-user-select: none;
       -ms-user-select: none;
       user-select: none;
+      max-height: 100%;
     }
 
     #top, #bottom {
@@ -22,14 +23,14 @@
 
     #top {
       position: absolute;
-      top: 0px;
-      left: 0px;
+      top: 0;
+      left: 0;
       z-index: 2;
     }
 
     #toolbar {
       position: absolute;
-      top: 0px;
+      top: 0;
       width: 800px;
       z-index: 4;
       margin: 1px;
@@ -60,8 +61,8 @@
 </head>
 
 <body style="width: 320px;">
-  <canvas id="bottom" width="800" height="480"></canvas>
-  <canvas id="top" width="800" height="480"></canvas>
+  <canvas id="bottom" width="800" height="400"></canvas>
+  <canvas id="top" width="800" height="400"></canvas>
 
   <div id="toolbar">
     <span id="clear" hotkey="67"><img src="images/clear.png"></span>
@@ -78,11 +79,17 @@
   <script type="text/javascript" src="underscore-min.js"></script>
   <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
   <script>
+    // Prevent mobile dragging
+    $(document).on('touchstart', function(e) {
+      if (e.target.nodeName !== 'INPUT' && e.target.nodeName !== 'IMG' ) {
+        e.preventDefault();
+      }
+    });
 
   $(document).ready(function() {
 
     var width = 800;
-    var height = 480;
+    var height = 400;
 
     var rootRef = new Firebase('https://wb-mobile-demo.firebaseio.com/');
 
@@ -260,7 +267,7 @@ init();
     });
 
     $(document).keydown(function(e) {
-      console.log(e.which)
+      console.log(e.which);
       $("*[hotkey="+e.which+"]").click();
     });
 
@@ -270,4 +277,3 @@ init();
 
   </script>
 </body>
-
