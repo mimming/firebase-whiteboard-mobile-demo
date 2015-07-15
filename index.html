@@ -14,7 +14,6 @@
       -moz-user-select: none;
       -ms-user-select: none;
       user-select: none;
-      max-height: 100%;
     }
 
     #top, #bottom {
@@ -54,13 +53,14 @@
       height: 32px;
       width: 32px;
     }
+
   </style>
 <meta content='width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;' name='viewport' />
 <meta name="viewport" content="width=device-width" />
 
 </head>
 
-<body style="width: 320px;">
+<body style="max-width: 320px; max-height: 100%;">
   <canvas id="bottom" width="800" height="400"></canvas>
   <canvas id="top" width="800" height="400"></canvas>
 
@@ -91,13 +91,13 @@
     var width = 800;
     var height = 400;
 
-    var rootRef = new Firebase('https://wb-mobile-demo.firebaseio.com/');
+    var rootRef = new Firebase('https://yaay.firebaseio.com/');
 
     //Choose a random whiteboard
-    var boardId = window.location.hash.replace(/#/g, '') || rootRef.push().name();
+    var boardId = window.location.hash.replace(/#/g, '') || "default"
+
     var wurl = window.location.toString().replace(/#.*/, '') + '#' + boardId;
     window.location = wurl;
-    $("#toolbar").append("<a style='float: right; margin-top: 4px; margin-right: 10px;' href='/qr/index.svg#" + wurl + "'><img src='images/qrcode.png'></a>");
 
     //if the hash changes again, reload the page
     setTimeout(function() {
@@ -106,8 +106,7 @@
       });
     }, 0);
 
-    var possibleNames = ["Joe", "Jenny", "Bob", "Frank", "Sally", "Anne",
-      "James", "Gretchen", "Tammy", "Hodor", "Brian", "Jennifer", "Jill", "Jen"];
+    var possibleNames = ["Anteater", "Bat", "Coyote", "Duck", "Ferret", "Gopher", "Skunk", "Turtle", "Dinosaur"];
     var randNameInd = Math.floor(Math.random()*possibleNames.length);
     var username = possibleNames[randNameInd];
 
